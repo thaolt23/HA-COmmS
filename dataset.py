@@ -2,11 +2,14 @@ import torch
 from torch.utils.data import Dataset
 from torchvision.datasets import CIFAR10
 from torchvision import transforms
+import random
 
 class UAVToyDataset(Dataset):
     def __init__(self, train=True):
         self.ds = CIFAR10(
-            root="./data", train=train, download=True,
+            root="./data",
+            train=train,
+            download=True,
             transform=transforms.ToTensor()
         )
 
@@ -16,14 +19,23 @@ class UAVToyDataset(Dataset):
     def __getitem__(self, idx):
         img, _ = self.ds[idx]
 
-        # Fake objectness map (center-biased, UAV-like)
+        # ----------------------------
+        # Image-dependent objectness
+        # ----------------------------
         H, W = 8, 8
-        y, x = torch.meshgrid(
-            torch.linspace(-1, 1, H),
-            torch.linspace(-1, 1, W),
-            indexing="ij"
-        )
-        objectness = torch.exp(-(x**2 + y**2) * 3)
-        objectness = objectness.unsqueeze(0)  # [1,H,W]
+        obj = torch.zeros(1, H, W)
 
-        return img, objectness
+        # random "object" location (simulate UAV target)
+        cx = random.randint(2, 5)
+        cy = random.randint(2, 5)
+
+        for i in range(H):
+            for j in range(W):
+                dist = (i - cx) ** 2 + (j - cy) ** 2
+                dist = torch.tensor(dist, dtype=torch.float32)
+                obj[0, i, j] = torch.exp(-dist / 2.0)
+
+        # normalize to [0,1]
+        obj = (obj - obj.min()) / (obj.max() - obj.min() + 1e-6)
+
+        return img, obj
