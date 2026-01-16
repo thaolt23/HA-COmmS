@@ -12,7 +12,7 @@ epochs = 8
 batch_size = 32
 lr = 1e-3
 
-lambda_ha = 0.1
+lambda_ha = 0.2
 lambda_ent = 0.01   # chống collapse
 
 ha_centers = torch.tensor(
